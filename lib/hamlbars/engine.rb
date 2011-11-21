@@ -6,7 +6,7 @@ module Hamlbars
       require 'sprockets'
       require 'sprockets/engines'
       require 'hamlbars/template'
-      #app.config.assets.register_engine '.hamljs', ::RubyHamlJs::Template
+      # app.config.assets.register_engine '.hamlbars', ::Hamlbars::Template
       Sprockets.register_engine '.hamlbars', ::Hamlbars::Template
     end
   end

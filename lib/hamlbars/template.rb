@@ -9,8 +9,14 @@ module Hamlbars
       '"'     => '\\"',
       "'"     => "\\'" }
 
-    self.default_mime_type = 'application/javascript'
-
+    def self.default_mime_type
+      'application/javascript'
+    end
+    
+    def self.default_namespace
+      'this.JST'
+    end
+    
     def self.engine_initialized?
       defined? ::Haml::Engine
     end
@@ -22,52 +28,44 @@ module Hamlbars
     def prepare
       options = @options.merge(:filename => eval_file, :line => line)
       @engine = ::Haml::Engine.new(data, options)
+      @namespace = self.class.default_namespace
     end
+    
+    attr_reader :namespace
 
     def evaluate(scope, locals, &block)
-      template = if @engine.respond_to?(:precompiled_method_return_value, true)
-        super
-      else
-        @engine.render(scope, locals, &block)
+      scope = scope.dup
+      
+      scope.class.send(:include, ActionView::Helpers) if defined?(::ActionView)
+      if defined?(::Rails)
+        scope.class.send(:include, Rails.application.helpers)
+        scope.class.send(:include, Rails.application.routes.url_helpers)
+        scope.default_url_options = Rails.application.config.action_controller.default_url_options || {}
       end
+      
+      template = @engine.render(scope, locals, &block)
+      template = template.strip.gsub(/(\r\n|[\n\r"'])/) { JS_ESCAPE_MAP[$1] }
+      
       if basename =~ /^_/
-        "Handlebars.registerPartial('#{name}', '#{template.strip.gsub(/(\r\n|[\n\r"'])/) { JS_ESCAPE_MAP[$1] }}');\n"
+        <<-REG
+(function() {
+  Handlebars.registerPartial("#{scope.logical_path.inspect}", "#{indent(template)}";
+}).call(this);
+        REG
       else
-        "App.registerTemplate('#{name}', '#{template.strip.gsub(/(\r\n|[\n\r"'])/) { JS_ESCAPE_MAP[$1] }}');\n"
+        <<-REG
+(function() {
+  #{namespace} || (#{namespace} = {});
+  #{namespace}[#{scope.logical_path.inspect}] = Handlebars.compile("#{indent(template)}");
+}).call(this);
+        REG
       end
     end
-
-    # Precompiled Haml source. Taken from the precompiled_with_ambles
-    # method in Haml::Precompiler:
-    # http://github.com/nex3/haml/blob/master/lib/haml/precompiler.rb#L111-126
-    def precompiled_template(locals)
-      @engine.precompiled
-    end
-
-    def precompiled_preamble(locals)
-      local_assigns = super
-      @engine.instance_eval do
-        <<-RUBY
-          begin
-            extend Haml::Helpers
-            _hamlout = @haml_buffer = Haml::Buffer.new(@haml_buffer, #{options_for_buffer.inspect})
-            _erbout = _hamlout.buffer
-            __in_erb_template = true
-            _haml_locals = locals
-            #{local_assigns}
-        RUBY
-      end
-    end
-
-    def precompiled_postamble(locals)
-      @engine.instance_eval do
-        <<-RUBY
-            #{precompiled_method_return_value}
-          ensure
-            @haml_buffer = @haml_buffer.upper
-          end
-        RUBY
-      end
+    
+    private
+    
+    def indent(string)
+      string.gsub(/$(.)/m, "\\1  ").strip
     end
   end
 end
