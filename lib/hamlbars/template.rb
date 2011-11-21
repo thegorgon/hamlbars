@@ -14,7 +14,7 @@ module Hamlbars
     end
     
     def self.default_namespace
-      'this.JST'
+      'this.TEMPLATES'
     end
     
     def self.engine_initialized?
