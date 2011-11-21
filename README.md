@@ -34,7 +34,7 @@ Hamlbars was designed for you to do exactly this. Fill your view files with HAML
 Caveat
 -------
 
-Many helpers require a request object to work properly. Although these all ActionView helpers are included in the scope of the HAML renderer, certain helpers will not work without access to this request object. As Sprockets does not have access to this, and most production templates will be compiled outside of a request cycle, there is no reasonable way to make all these helpers work universally. They are included so that the individual programmer can take steps to make these helpers work on a case by case basis as needed.
+Many helpers require a request object to work properly. Although all these ActionView helpers are included in the scope of the HAML renderer, certain helpers will not work without access to this request object. As Sprockets does not have access to this, and most production templates will be compiled outside of a request cycle, there is no reasonable way to make all these helpers work universally. They are included so that the individual programmer can take steps to make these helpers work on a case by case basis as needed.
 
 I have taken efforts to enable usage of rails routing helpers, however. If you define `Rails.application.config.default_url_options`, these options will be extended to the HAML scope context, allowing for usage of all `{path}_url` methods.
 
