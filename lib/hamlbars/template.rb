@@ -49,7 +49,7 @@ module Hamlbars
       if basename =~ /^_/
         <<-REG
 (function() {
-  Handlebars.registerPartial("#{scope.logical_path.inspect}", "#{indent(template)}";
+  Handlebars.registerPartial(#{scope.logical_path.inspect}, "#{indent(template)}");
 }).call(this);
         REG
       else
